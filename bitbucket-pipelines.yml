@@ -1,0 +1,27 @@
+image: node:18.9.0
+pipelines:
+  default:
+    - step:
+        name: Build and package Position Lambda
+        caches:
+          - node
+        script:
+          - npm install
+          - ls -la node_modules
+          - apt-get update && apt-get install -y zip
+          - npm run build
+          - zip -r trading-bot-position-lambda.zip .
+        artifacts:
+          - trading-bot-position-lambda.zip
+    - step:
+        name: Update Lambda code
+        script:
+          - pipe: atlassian/aws-lambda-deploy:1.2.0
+            variables:
+              AWS_DEFAULT_REGION: $AWS_DEFAULT_REGION
+              AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+              AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+              S3_BUCKET: $S3_BUCKET
+              FUNCTION_NAME: 'position-lambda'
+              COMMAND: 'update'
+              ZIP_FILE: 'trading-bot-position-lambda.zip'
